@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Server",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": [ "<node_internals>/**" ],
+      "env": {
+        "BASE_PATH": "${workspaceFolder}"
+      },
+      "program": "${workspaceFolder}/dist/index.js",
+      "cwd": "${workspaceFolder}/dist",
+      "preLaunchTask": "yarn: build",
+      "outFiles": [ "${workspaceFolder}/dist/**/*.js" ]
+    },
+    {
+      "name": "Debug Unit Tests",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": [ "<node_internals>/**" ],
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/node_modules/.bin/jest"
+    }
+  ]
+}
