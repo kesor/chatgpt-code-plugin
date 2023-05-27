@@ -125,7 +125,15 @@ const handleErrors: express.ErrorRequestHandler = (err, req, res, _next) => {
 
 const app = express();
 app.use(express.json()); // for parsing application/json
-app.use(cors({ origin: 'https://chat.openai.com' })); // handle CORS preflight requests
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Private-Network", "true")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
+  next()
+})
+app.use(cors({
+  origin: 'https://chat.openai.com',
+  credentials: true
+}))
 app.use(morgan('dev'))
 app.use(express.static('public'));
 app.get('/files', getFiles)
