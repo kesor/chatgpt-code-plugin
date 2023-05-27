@@ -4,20 +4,11 @@ import { check, validationResult } from 'express-validator';
 import * as fs from 'fs';
 import morgan from 'morgan';
 import path from 'path';
-import winston from 'winston';
 import { getFileList, getFunctionData, getFunctionList } from './function-utils';
+import { logger } from './logger';
 
 const PORT = +(process.env.PORT ?? 3000);
 const BASE_PATH = process.env.BASE_PATH ?? path.resolve(__dirname, '..', 'src')
-
-const logger = winston.createLogger({
-  level: 'info',
-  format: winston.format.json(),
-  transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' }),
-  ],
-});
 
 type AsyncExpressRoute = (
   req: express.Request,

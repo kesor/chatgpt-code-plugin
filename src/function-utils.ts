@@ -2,6 +2,7 @@ import { AST, AST_NODE_TYPES, parse } from '@typescript-eslint/typescript-estree
 import fs from 'fs';
 import ignore from 'ignore';
 import path from 'path';
+import { logger } from './logger';
 
 // Minimizes a given function body by only keeping the first and last lines
 export function minimize(body: string): string {
@@ -80,40 +81,51 @@ export async function getFunctionList(directory: string = __dirname, fileName?: 
   return functionList;
 }
 
-export async function getFileList(directory: string = __dirname, relativePath: string = '') {
+export async function getFileList(directory = __dirname, originalRoot = directory, ig = ignore()) {
   const fileList: string[] = [];
   const files = await fs.promises.readdir(directory);
 
-  // Create a new ignore instance
-  const ig = ignore({
-    allowRelativePaths: true,
-    ignoreCase: true
-  })
-  // always ignore .git folder and node_modules/ folders
-  .add(['.git/**', 'node_modules/**'])
+  if (directory === originalRoot) {
+    // always ignore .git folder and node_modules/ folders
+    ig.add(['.git/**', 'node_modules/**'])
 
-  // Check if there's a .gitignore file in the current directory
-  // If .gitignore exists, add its rules to the ignore filter
-  const gitignorePath = path.join(directory, '.gitignore');
-  if (fs.existsSync(gitignorePath))
-    ig.add(fs.readFileSync(gitignorePath).toString().split(/\\n|\\r/).filter(x => x).flat())
+    // Check if there's a .gitignore file in the current directory
+    // If .gitignore exists, add its rules to the ignore filter
+    const gitignorePath = path.join(directory, '.gitignore');
+    if (fs.existsSync(gitignorePath)) {
+      const gitignoreContent = (await fs.promises.readFile(gitignorePath)).toString('utf-8')
+      logger.info(`Found gitignore file at ${gitignorePath}. Adding content to ignore rules.`)
+      ig.add(
+        gitignoreContent
+          .split(/\n|\r/)
+          .filter(line => !line.startsWith('#'))
+          .map(line => line.startsWith('/') ? line.slice(1) : line)
+      )
+    }
+    logger.info(ig); // log the rules of the ignore filter
+  }
 
   for (const file of files) {
-    const fullPath = path.join(directory, file).replace(/\\/g, '/')
-    const fullRelativePath = path.posix.join(relativePath, file)
-
-    // Skip if the file is ignored
-    if (ig.ignores(fullRelativePath))
-      continue
+    const fullPath = path.join(directory, file)
+    const fullRelativePath = path.relative(originalRoot, fullPath)
 
     const stat = await fs.promises.stat(fullPath);
 
     // If the file is a directory, recurse into it
     // Note that this will check for a .gitignore file in the directory
-    if (stat.isDirectory())
-      fileList.push(...await getFileList(fullPath, fullRelativePath));
-    else if (stat.isFile())
+    if (stat.isDirectory()) {
+      // Skip if the directory is ignored
+      const ignored = ig.ignores(fullRelativePath.endsWith('/') ? fullRelativePath : fullRelativePath + '/')
+      logger.info(`Checking directory ${fullRelativePath}/ is ignored: ${ignored}`)
+      if (ignored)
+        continue
+      fileList.push(...await getFileList(fullPath, originalRoot, ig));
+    } else if (stat.isFile()) {
+      // Skip if the file is ignored
+      if (ig.ignores(fullRelativePath))
+        continue
       fileList.push(fullPath);
+    }
   }
 
   return fileList;
