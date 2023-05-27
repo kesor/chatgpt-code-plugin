@@ -1,11 +1,10 @@
 import cors from 'cors';
-import winston from 'winston';
-
 import express from 'express';
 import { check, validationResult } from 'express-validator';
 import * as fs from 'fs';
 import morgan from 'morgan';
 import { join, relative, resolve } from 'path';
+import winston from 'winston';
 import { getFileList, getFunctionData, getFunctionList } from './function-utils';
 
 const PORT = +(process.env.PORT ?? 3000);
