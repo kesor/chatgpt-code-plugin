@@ -1,6 +1,7 @@
 import { AST, AST_NODE_TYPES, parse } from '@typescript-eslint/typescript-estree';
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'fs';
+import ignore from 'ignore';
+import path from 'path';
 
 // Minimizes a given function body by only keeping the first and last lines
 export function minimize(body: string): string {
@@ -79,20 +80,42 @@ export async function getFunctionList(directory: string = __dirname, fileName?: 
   return functionList;
 }
 
-export async function getFileList(directory: string = __dirname) {
+export async function getFileList(directory: string = __dirname, relativePath: string = '') {
   const fileList: string[] = [];
   const files = await fs.promises.readdir(directory);
 
+  // Create a new ignore instance
+  const ig = ignore({
+    allowRelativePaths: true,
+    ignoreCase: true
+  })
+  // always ignore .git folder and node_modules/ folders
+  .add(['.git/**', 'node_modules/**'])
+
+  // Check if there's a .gitignore file in the current directory
+  // If .gitignore exists, add its rules to the ignore filter
+  const gitignorePath = path.join(directory, '.gitignore');
+  if (fs.existsSync(gitignorePath))
+    ig.add(fs.readFileSync(gitignorePath).toString().split(/\\n|\\r/).filter(x => x).flat())
+
   for (const file of files) {
-    const fullPath = path.join(directory, file);
+    const fullPath = path.join(directory, file).replace(/\\/g, '/')
+    const fullRelativePath = path.posix.join(relativePath, file)
+
+    // Skip if the file is ignored
+    if (ig.ignores(fullRelativePath))
+      continue
+
     const stat = await fs.promises.stat(fullPath);
 
-    if (stat.isDirectory()) {
-      fileList.push(...await getFileList(fullPath));
-    } else if (stat.isFile()) {
+    // If the file is a directory, recurse into it
+    // Note that this will check for a .gitignore file in the directory
+    if (stat.isDirectory())
+      fileList.push(...await getFileList(fullPath, fullRelativePath));
+    else if (stat.isFile())
       fileList.push(fullPath);
-    }
   }
+
   return fileList;
 }
 

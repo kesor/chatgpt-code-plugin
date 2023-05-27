@@ -3,12 +3,12 @@ import express from 'express';
 import { check, validationResult } from 'express-validator';
 import * as fs from 'fs';
 import morgan from 'morgan';
-import { join, relative, resolve } from 'path';
+import path from 'path';
 import winston from 'winston';
 import { getFileList, getFunctionData, getFunctionList } from './function-utils';
 
 const PORT = +(process.env.PORT ?? 3000);
-const BASE_PATH = process.env.BASE_PATH ?? resolve(__dirname, '..', 'src')
+const BASE_PATH = process.env.BASE_PATH ?? path.resolve(__dirname, '..', 'src')
 
 const logger = winston.createLogger({
   level: 'info',
@@ -36,7 +36,7 @@ const handleErrors: express.ErrorRequestHandler = (err, req, res, next) => {
 
 // File path resolution function
 const resolveFilePath = (fileName: string) => {
-  return join(BASE_PATH, decodeURIComponent(fileName));
+  return path.join(BASE_PATH, decodeURIComponent(fileName));
 }
 
 const readFileContent = async (req: express.Request, content = true) => {
@@ -62,7 +62,7 @@ const getFiles: AsyncExpressRoute = async (_req, res, next) => {
   logger.info('getFiles')
   try {
     const files = await getFileList(BASE_PATH);
-    res.send(files.map(fileName => encodeURIComponent(relative(BASE_PATH, fileName))))
+    res.send(files.map(fileName => encodeURIComponent(path.relative(BASE_PATH, fileName))))
   } catch (err) {
     next(err)
   }
@@ -89,7 +89,7 @@ const getAllFunctions: AsyncExpressRoute = async (req, res, next) => {
     res.send(
       (await getFunctionList(BASE_PATH))
         .flat()
-        .map(obj => ({ ...obj, file: relative(BASE_PATH, obj.file) }))
+        .map(obj => ({ ...obj, file: path.relative(BASE_PATH, obj.file) }))
     )
   } catch (err) {
     next(err)
@@ -106,7 +106,7 @@ const getFunctionsInFile: AsyncExpressRoute = async (req, res, next) => {
     res.send(
       (await getFunctionList(BASE_PATH, fileName))
         .flat()
-        .map(obj => ({ ...obj, file: relative(BASE_PATH, obj.file) }))
+        .map(obj => ({ ...obj, file: path.relative(BASE_PATH, obj.file) }))
     )
   } catch (err) {
     next(err)
