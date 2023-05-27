@@ -42,7 +42,7 @@ const getFiles: AsyncExpressRoute = async (_req, res, next) => {
 // It validates the fileName parameter, reads the file content, and sends it in the response.
 const getFileContent: AsyncExpressRoute = async (req, res, next) => {
   const fileName = decodeURIComponent(req.params[0])
-  logger.info('getFileContent for', fileName)
+  logger.info('getFileContent for ${fileName}')
 
   const errors = validationResult(req)
   if (!errors.isEmpty())
@@ -77,7 +77,7 @@ const getAllFunctions: AsyncExpressRoute = async (req, res, next) => {
 // It fetches the list of functions in the specified file and sends it in the response.
 const getFunctionsInFile: AsyncExpressRoute = async (req, res, next) => {
   const fileName = decodeURIComponent(req.params[0])
-  logger.info('getFunctionsInFile for', fileName)
+  logger.info(`getFunctionsInFile for ${fileName}`)
   const errors = validationResult(req)
   if (!errors.isEmpty())
     return res.status(400).json({ errors: errors.array() });
@@ -96,7 +96,7 @@ const getFunctionsInFile: AsyncExpressRoute = async (req, res, next) => {
 const getFunctionContent: AsyncExpressRoute = async (req, res, next) => {
   const fileName = decodeURIComponent(req.params[0])
   const { functionName } = req.params;
-  logger.info('getFunctionContent for', functionName, 'in', fileName)
+  logger.info(`getFunctionContent for ${functionName} in ${fileName}`)
 
   const errors = validationResult(req)
   if (!errors.isEmpty())
@@ -129,17 +129,17 @@ app.use(cors({ origin: 'https://chat.openai.com' })); // handle CORS preflight r
 app.use(morgan('dev'))
 app.use(express.static('public'));
 app.get('/files', getFiles)
-app.get('/files/(*)', [
-  check('0').isString().withMessage('File name should be a string'),
-], getFileContent)
 app.get('/functions', getAllFunctions);
-app.get('/files/(*)/functions', [
-  check('0').isString().withMessage('File name should be a string'),
-], getFunctionsInFile );
-app.get('/files/(*)/functions/:functionName', [
+app.get('/files/*/functions/:functionName', [
   check('0').isString().withMessage('File name should be a string'),
   check('functionName').isString().withMessage('Function name should be a string'),
 ], getFunctionContent);
+app.get('/files/*/functions', [
+  check('0').isString().withMessage('File name should be a string'),
+], getFunctionsInFile );
+app.get('/files/*', [
+  check('0').isString().withMessage('File name should be a string'),
+], getFileContent)
 app.use(handleErrors)
 app.listen(PORT, () => {
   logger.info(`Starting server on port ${PORT}`)
