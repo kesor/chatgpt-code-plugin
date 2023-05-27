@@ -1,0 +1,114 @@
+openapi: 3.0.0
+info:
+  title: Code Parser API
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /files:
+    get:
+      operationId: getFiles
+      summary: Get the list of files in this project
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '500':
+          description: Internal server error
+  /files/{fileName}:
+    get:
+      operationId: getFileContent
+      summary: Get the content of a specific file in this project
+      parameters:
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileName:
+                    type: string
+                  content:
+                    type: string
+        '400':
+          description: Bad request (missing or incorrect parameters)
+        '404':
+          description: Not found (file not found)
+        '500':
+          description: Internal server error
+
+  /files/{fileName}/functions:
+    get:
+      operationId: getFunctionsInFile
+      parameters:
+      - name: fileName
+        in: path
+        required: true
+        schema:
+          type: string
+      summary: Get the list of functions in a specified file in this project
+      responses:
+        '200':
+          description: 'Successful'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileName:
+                    type: string
+                  functions:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Bad request (missing or incorrect parameters)
+        '404':
+          description: Not found (file not found)
+        '500':
+          description: Internal server error
+
+  /files/{fileName}/functions/{functionName}:
+    get:
+      operationId: getFunctionContent
+      summary: Get the content of a specific function in this project
+      parameters:
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: functionName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 'Successful'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileName:
+                    type: string
+                  functionName:
+                    type: string
+                  content:
+                    type: string
+                  minimal:
+                    description: minimal content for this function
+                    type: string
