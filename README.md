@@ -25,6 +25,8 @@ Once the server is running, you, or ChatGPT, can use the following endpoints:
 - `GET /files/:fileName/functions`: Find all functions in a specific file
 - `GET /files/:fileName/functions/:functionName`: Get the content of a specific function in a file
 
+Another more detailed example at the end of this readme file.
+
 ![Example Usage in ChatGPT](example.png)
 
 ## Contributing
@@ -43,3 +45,6 @@ We welcome contributions from the community!
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
+
+
+![Detailed example of usage in ChatGPT](example_detailed.png)
