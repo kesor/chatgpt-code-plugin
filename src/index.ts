@@ -25,6 +25,37 @@ type AsyncExpressRoute = (
   next: express.NextFunction
 ) => Promise<void|express.Response>
 
+const handleErrors: express.ErrorRequestHandler = (err, req, res, next) => {
+  logger.error(err);
+  if ((err as NodeJS.ErrnoException).code === 'ENOENT')
+    return res.status(404).send({ error: 'File not found' });
+  if ((err as NodeJS.ErrnoException).code === 'EACCES')
+    return res.status(403).send({ error: 'Permission denied' });
+  res.status(500).json({ error: 'Internal server error' });
+}
+
+// File path resolution function
+const resolveFilePath = (fileName: string) => {
+  return join(BASE_PATH, decodeURIComponent(fileName));
+}
+
+const readFileContent = async (req: express.Request, content = true) => {
+  const fileName = decodeURIComponent(req.params[0])
+  const filePath = resolveFilePath(fileName)
+  return {
+    fileName,
+    filePath,
+    fileContent: content ? await fs.promises.readFile(filePath, 'utf8') : undefined
+  }
+}
+
+// Parameter validation function
+const validateParams = (req: express.Request, res: express.Response) => {
+  const errors = validationResult(req)
+  if (!errors.isEmpty())
+    return res.status(400).json({ errors: errors.array() });
+}
+
 // This function handles GET requests to /files.
 // It fetches the list of files and sends it in the response.
 const getFiles: AsyncExpressRoute = async (_req, res, next) => {
@@ -40,17 +71,10 @@ const getFiles: AsyncExpressRoute = async (_req, res, next) => {
 // This function handles GET requests to /files/:fileName.
 // It validates the fileName parameter, reads the file content, and sends it in the response.
 const getFileContent: AsyncExpressRoute = async (req, res, next) => {
-  const fileName = decodeURIComponent(req.params[0])
-  logger.info('getFileContent for ${fileName}')
-
-  const errors = validationResult(req)
-  if (!errors.isEmpty())
-    return res.status(400).json({ errors: errors.array() });
-
-  const filePath = join(BASE_PATH, fileName);
-
+  validateParams(req, res);
   try {
-    const fileContent = await fs.promises.readFile(filePath, 'utf8');
+    logger.info(`Reading file content file ${req.params[0]}`)
+    const { fileName, fileContent } = await readFileContent(req)
     res.json({ file: fileName, content: fileContent });
   } catch (err) {
     next(err)
@@ -75,17 +99,14 @@ const getAllFunctions: AsyncExpressRoute = async (req, res, next) => {
 // This function handles GET requests to /files/:fileName/functions.
 // It fetches the list of functions in the specified file and sends it in the response.
 const getFunctionsInFile: AsyncExpressRoute = async (req, res, next) => {
-  const fileName = decodeURIComponent(req.params[0])
-  logger.info(`getFunctionsInFile for ${fileName}`)
-  const errors = validationResult(req)
-  if (!errors.isEmpty())
-    return res.status(400).json({ errors: errors.array() });
+  validateParams(req, res);
   try {
+    logger.info(`Reading file content file ${req.params[0]}`)
+    const { fileName } = await readFileContent(req, false)
     res.send(
-      (await getFunctionList(BASE_PATH))
+      (await getFunctionList(BASE_PATH, fileName))
         .flat()
         .map(obj => ({ ...obj, file: relative(BASE_PATH, obj.file) }))
-        .filter(obj => obj.file === fileName)
     )
   } catch (err) {
     next(err)
@@ -93,17 +114,11 @@ const getFunctionsInFile: AsyncExpressRoute = async (req, res, next) => {
 }
 
 const getFunctionContent: AsyncExpressRoute = async (req, res, next) => {
-  const fileName = decodeURIComponent(req.params[0])
-  const { functionName } = req.params;
-  logger.info(`getFunctionContent for ${functionName} in ${fileName}`)
-
-  const errors = validationResult(req)
-  if (!errors.isEmpty())
-    return res.status(400).json({ errors: errors.array() });
-
-  const filePath = join(BASE_PATH, fileName);
-
+  validateParams(req, res);
   try {
+    const { functionName } = req.params;
+    logger.info(`Reading file content file ${req.params[0]} to inspect function ${functionName}`)
+    const { filePath } = await readFileContent(req, false)
     const functionCode = await getFunctionData(functionName, filePath)
     if (!functionCode)
       return res.status(404).json({ error: 'Function not found' });
@@ -111,15 +126,6 @@ const getFunctionContent: AsyncExpressRoute = async (req, res, next) => {
   } catch(err) {
     next(err)
   }
-}
-
-const handleErrors: express.ErrorRequestHandler = (err, req, res, _next) => {
-  logger.error(err);
-  if ((err as NodeJS.ErrnoException).code === 'ENOENT')
-    return res.status(404).send({ error: 'File not found' });
-  if ((err as NodeJS.ErrnoException).code === 'EACCES')
-    return res.status(403).send({ error: 'Permission denied' });
-  res.status(500).json({ error: 'Internal server error' });
 }
 
 const app = express();

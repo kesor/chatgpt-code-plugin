@@ -52,13 +52,11 @@ function findFunctionsInFile(ast: AST<{range:true,loc:true}>) {
           start: functionNode.range[0],
           end: functionNode.range[1],
         });
-
   }
-
   return functions;
 }
 
-export async function getFunctionList(directory: string = __dirname): Promise<{ name: string, file: string }[]> {
+export async function getFunctionList(directory: string = __dirname, fileName?: string): Promise<{ name: string, file: string }[]> {
   const functionList: { name: string, file: string }[] = [];
   const files = await fs.promises.readdir(directory);
 
@@ -66,7 +64,7 @@ export async function getFunctionList(directory: string = __dirname): Promise<{ 
     const fullPath = path.join(directory, file);
     const stat = await fs.promises.stat(fullPath);
 
-    if (stat.isFile() && file.endsWith('.ts')) {
+    if (stat.isFile() && file.endsWith('.ts') && (!fileName || file === fileName)) {
       const content = await fs.promises.readFile(fullPath, 'utf8');
       const ast = parse(content, { range: true, loc: true })
       const functions = findFunctionsInFile(ast);
