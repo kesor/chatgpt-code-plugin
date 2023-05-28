@@ -53,36 +53,7 @@ paths:
   /files/{fileName}:
     get:
       operationId: getFileContent
-      summary: Get the content of a specific file in this project
-      parameters:
-        - name: fileName
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Successful
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  fileName:
-                    type: string
-                  content:
-                    type: string
-        '400':
-          description: Bad request (missing or incorrect parameters)
-        '404':
-          description: Not found (file not found)
-        '500':
-          description: Internal server error
-
-  /files/{fileName}/range:
-    get:
-      operationId: getFileContentRanged
-      summary: Get a limited range of content from a specific file in this project
+      summary: Get content or range of bytes from a specific file in this project
       parameters:
         - name: fileName
           in: path
@@ -111,12 +82,6 @@ paths:
                     type: string
                   content:
                     type: string
-                  startByte:
-                    optional: true
-                    type: number
-                  endByte:
-                    optional: true
-                    type: number
         '400':
           description: Bad request (missing or incorrect parameters)
         '404':

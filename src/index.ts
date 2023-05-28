@@ -66,24 +66,16 @@ const getFileContent: AsyncExpressRoute = async (req, res, next) => {
   try {
     logger.info(`Reading file content file ${req.params[0]}`)
     const { fileName, fileContent } = await readFileContent(req)
-    res.json({ fileName, content: fileContent });
-  } catch (err) {
-    next(err)
-  }
-}
-
-const getRangeInFile: AsyncExpressRoute = async (req, res, next) => {
-  validateParams(req, res)
-  try {
-    logger.info(`Reading file content file ${req.params[0]}`)
-    const { fileName, fileContent } = await readFileContent(req)
-    const { startByte, endByte } = req.query
+    if (!fileContent)
+      return next({ error: 'No content found in file', fileName })
+    const startByte = +(req.query['startByte'] ?? 0)
+    const endByte = +(req.query['endByte'] ?? fileContent.length - 1)
     res.json({
-      file: fileName,
-      content: fileContent?.substring(+(startByte ?? 0), +(endByte ?? fileContent.length)),
+      fileName,
+      content: fileContent.substring(startByte, endByte),
       startByte,
       endByte
-    })
+    });
   } catch (err) {
     next(err)
   }
@@ -156,9 +148,6 @@ app.get('/files/*/functions/:functionName', [
 app.get('/files/*/functions', [
   check('0').isString().withMessage('File name should be a string'),
 ], getFunctionsInFile );
-app.get('/files/*/range', [
-  check('0').isString().withMessage('File name should be a string'),
-], getRangeInFile );
 app.get('/files/*', [
   check('0').isString().withMessage('File name should be a string'),
 ], getFileContent)
