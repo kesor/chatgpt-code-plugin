@@ -20,6 +20,27 @@ paths:
                   type: string
         '500':
           description: Internal server error
+  /functions:
+    get:
+      operationId: getFunctions
+      summary: Get the list of all functions in all files in this project
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+              schema:
+                type: object
+                properties:
+                  fileName:
+                    type: string
+                  functions:
+                    type: array
+                    items:
+                      type: string
+        '500':
+          description: Internal server error
   /files/{fileName}:
     get:
       operationId: getFileContent
