@@ -30,17 +30,26 @@ paths:
           content:
             application/json:
               schema:
-              schema:
-                type: object
-                properties:
-                  fileName:
-                    type: string
-                  functions:
-                    type: array
-                    items:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    fileName:
                       type: string
+                    functions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          functionName:
+                            type: string
+                          startByte:
+                            type: number
+                          endByte:
+                            type: number
         '500':
           description: Internal server error
+
   /files/{fileName}:
     get:
       operationId: getFileContent
@@ -63,6 +72,51 @@ paths:
                     type: string
                   content:
                     type: string
+        '400':
+          description: Bad request (missing or incorrect parameters)
+        '404':
+          description: Not found (file not found)
+        '500':
+          description: Internal server error
+
+  /files/{fileName}/range:
+    get:
+      operationId: getFileContentRanged
+      summary: Get a limited range of content from a specific file in this project
+      parameters:
+        - name: fileName
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: startByte
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: endByte
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fileName:
+                    type: string
+                  content:
+                    type: string
+                  startByte:
+                    optional: true
+                    type: number
+                  endByte:
+                    optional: true
+                    type: number
         '400':
           description: Bad request (missing or incorrect parameters)
         '404':
@@ -93,7 +147,14 @@ paths:
                   functions:
                     type: array
                     items:
-                      type: string
+                      type: object
+                      properties:
+                        functionName:
+                          type: string
+                        startByte:
+                          type: number
+                        endByte:
+                          type: number
         '400':
           description: Bad request (missing or incorrect parameters)
         '404':
@@ -129,7 +190,17 @@ paths:
                   functionName:
                     type: string
                   content:
-                    type: string
-                  minimal:
-                    description: minimal content for this function
-                    type: string
+                    type: object
+                    properties:
+                      minimal:
+                        description: minimal content for this function
+                        type: string
+                      full:
+                        description: full content of function
+                        type: string
+                  startByte:
+                    description: first byte of function location in the file
+                    type: number
+                  endByte:
+                    description: last byte of function location in the file
+                    type: number

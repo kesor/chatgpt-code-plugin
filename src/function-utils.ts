@@ -4,6 +4,17 @@ import ignore from 'ignore';
 import path from 'path';
 import { logger } from './logger';
 
+interface FileRef {
+  fileName: string
+  functions?: FunctionRef[]
+}
+
+interface FunctionRef {
+  functionName: string,
+  startByte: number,
+  endByte: number
+}
+
 // Minimizes a given function body by only keeping the first and last lines
 export function minimize(body: string): string {
   const bodyLines = body.split(/(\n|\r)/);
@@ -58,27 +69,32 @@ function findFunctionsInFile(ast: AST<{range:true,loc:true}>) {
   return functions;
 }
 
-export async function getFunctionList(directory: string = __dirname, fileName?: string): Promise<{ name: string, file: string }[]> {
-  const functionList: { name: string, file: string }[] = [];
-  const files = await fs.promises.readdir(directory);
+export async function getFunctionList(directory: string = __dirname, fileName?: string): Promise<FileRef[]> {
+  const functionList: FileRef[] = [];
+  const files = await getFileList(directory)
 
+  const actualFileName = fileName ? path.join(directory, fileName) : undefined
   for (const file of files) {
-    const fullPath = path.join(directory, file);
-    const stat = await fs.promises.stat(fullPath);
-
-    if (stat.isFile() && file.endsWith('.ts') && (!fileName || file === fileName)) {
-      const content = await fs.promises.readFile(fullPath, 'utf8');
-      const ast = parse(content, { range: true, loc: true })
-      const functions = findFunctionsInFile(ast);
-      for (const func of functions)
-        functionList.push({
-          name: func.name,
-          file: fullPath,
-        });
-    }
+    if (
+       (actualFileName && actualFileName !== file) // when filename is specified, only use that file
+    || (!file.endsWith('.ts') && !file.endsWith('.js')) // must be a js/ts file
+    || (!fs.statSync(file).isFile()) // must be a file
+    )
+      continue
+    const content = await fs.promises.readFile(file, 'utf8');
+    const ast = parse(content, { range: true, loc: true })
+    functionList.push({
+      fileName: file,
+      functions: findFunctionsInFile(ast)
+        .map(func => ({
+          functionName: func.name,
+          startByte: func.start,
+          endByte: func.end
+        }))
+      })
   }
 
-  return functionList;
+  return functionList
 }
 
 export async function getFileList(directory = __dirname, originalRoot = directory, ig = ignore()) {
@@ -134,7 +150,12 @@ export async function getFileList(directory = __dirname, originalRoot = director
 export type FunctionData = {
   fileName: string,
   functionName: string
-  content: { minimal: string, full: string }
+  content: {
+    minimal: string,
+    full: string
+  },
+  startByte: number,
+  endByte: number
 }
 
 async function extractFunctionRange(ast: AST<{loc:true,range:true}>, functionName: string): Promise<{start:number,end:number}|undefined> {
@@ -157,7 +178,9 @@ export async function getFunctionData(functionName:string, fileName: string): Pr
       content: {
         minimal: minimize(functionContent),
         full: functionContent
-      }
+      },
+      startByte: range.start,
+      endByte: range.end
     }
   }
 }

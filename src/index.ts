@@ -66,7 +66,24 @@ const getFileContent: AsyncExpressRoute = async (req, res, next) => {
   try {
     logger.info(`Reading file content file ${req.params[0]}`)
     const { fileName, fileContent } = await readFileContent(req)
-    res.json({ file: fileName, content: fileContent });
+    res.json({ fileName, content: fileContent });
+  } catch (err) {
+    next(err)
+  }
+}
+
+const getRangeInFile: AsyncExpressRoute = async (req, res, next) => {
+  validateParams(req, res)
+  try {
+    logger.info(`Reading file content file ${req.params[0]}`)
+    const { fileName, fileContent } = await readFileContent(req)
+    const { startByte, endByte } = req.query
+    res.json({
+      file: fileName,
+      content: fileContent?.substring(+(startByte ?? 0), +(endByte ?? fileContent.length)),
+      startByte,
+      endByte
+    })
   } catch (err) {
     next(err)
   }
@@ -79,8 +96,7 @@ const getAllFunctions: AsyncExpressRoute = async (req, res, next) => {
   try {
     res.send(
       (await getFunctionList(BASE_PATH))
-        .flat()
-        .map(obj => ({ ...obj, file: path.relative(BASE_PATH, obj.file) }))
+        .map(obj => ({ ...obj, fileName: path.relative(BASE_PATH, obj.fileName) }))
     )
   } catch (err) {
     next(err)
@@ -96,8 +112,7 @@ const getFunctionsInFile: AsyncExpressRoute = async (req, res, next) => {
     const { fileName } = await readFileContent(req, false)
     res.send(
       (await getFunctionList(BASE_PATH, fileName))
-        .flat()
-        .map(obj => ({ ...obj, file: path.relative(BASE_PATH, obj.file) }))
+        .map(obj => ({ ...obj, fileName: path.relative(BASE_PATH, obj.fileName) }))
     )
   } catch (err) {
     next(err)
@@ -141,6 +156,9 @@ app.get('/files/*/functions/:functionName', [
 app.get('/files/*/functions', [
   check('0').isString().withMessage('File name should be a string'),
 ], getFunctionsInFile );
+app.get('/files/*/range', [
+  check('0').isString().withMessage('File name should be a string'),
+], getRangeInFile );
 app.get('/files/*', [
   check('0').isString().withMessage('File name should be a string'),
 ], getFileContent)
