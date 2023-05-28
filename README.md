@@ -10,10 +10,11 @@ Code ChatGPT Plugin is a TypeScript Code Analyzer that provides a set of utiliti
 
 ## Installation
 
-1. Clone the repository: `git clone https://github.com/username/typescript-code-analyzer.git`
-2. Navigate to the project directory: `cd typescript-code-analyzer`
+1. Clone the repository: `git clone https://github.com/kesor/chatgpt-code-plugin.git`
+2. Navigate to the project directory: `cd chatgpt-code-plugin`
 3. Install the dependencies: `npm install`
-4. Start the server: `npm start`
+4. Start the server: `BASE_PATH=/home/myuser/src/awesome-project  npm start`
+5. Add the API into ChatGPT Plus plugins' "Developer your own plugin" interface
 
 ## Usage
 
