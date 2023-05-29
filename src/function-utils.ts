@@ -2,7 +2,6 @@ import { AST, AST_NODE_TYPES, parse } from '@typescript-eslint/typescript-estree
 import fs from 'fs';
 import ignore from 'ignore';
 import path from 'path';
-import { logger } from './logger';
 
 interface FileRef {
   fileName: string
@@ -110,7 +109,6 @@ export async function getFileList(directory = __dirname, originalRoot = director
     const gitignorePath = path.join(directory, '.gitignore');
     if (fs.existsSync(gitignorePath)) {
       const gitignoreContent = (await fs.promises.readFile(gitignorePath)).toString('utf-8')
-      logger.info(`Found gitignore file at ${gitignorePath}. Adding content to ignore rules.`)
       ig.add(
         gitignoreContent
           .split(/\n|\r/)
@@ -118,7 +116,6 @@ export async function getFileList(directory = __dirname, originalRoot = director
           .map(line => line.startsWith('/') ? line.slice(1) : line)
       )
     }
-    logger.info(ig); // log the rules of the ignore filter
   }
 
   for (const file of files) {
@@ -132,7 +129,6 @@ export async function getFileList(directory = __dirname, originalRoot = director
     if (stat.isDirectory()) {
       // Skip if the directory is ignored
       const ignored = ig.ignores(fullRelativePath.endsWith('/') ? fullRelativePath : fullRelativePath + '/')
-      logger.info(`Checking directory ${fullRelativePath}/ is ignored: ${ignored}`)
       if (ignored)
         continue
       fileList.push(...await getFileList(fullPath, originalRoot, ig));
