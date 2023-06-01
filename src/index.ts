@@ -46,7 +46,7 @@ const getFiles: express.RequestHandler = async (req, res, next) => {
 const getFileContent: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   try {
-    logger.info(`Reading file content file ${req.params[0]}`)
+    logger.info('Reading file content file %s', req.params[0])
     const { fileName, fileContent } = await readFileContent(req)
     if (!fileContent)
       return next({ error: 'No content found in file', fileName })
@@ -82,7 +82,7 @@ const getAllFunctions: express.RequestHandler = async (req, res, next) => {
 const getFunctionsInFile: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   try {
-    logger.info(`Reading file content file ${req.params[0]}`)
+    logger.info('Reading file content file %s', req.params[0])
     const { fileName } = await readFileContent(req, false)
     res.send(
       (await getFunctionList(BASE_PATH, fileName))
@@ -97,7 +97,7 @@ const getFunctionContent: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   try {
     const { functionName } = req.params
-    logger.info(`Reading file content file ${req.params[0]} to inspect function ${functionName}`)
+    logger.info(`Reading file content file %s to inspect function %s`, req.params[0], functionName)
     const { filePath } = await readFileContent(req, false)
     const functionCode = await getFunctionData(functionName, filePath)
     if (!functionCode)
