@@ -74,13 +74,16 @@ export async function getFunctionList(directory: string = __dirname, fileName?: 
 
   const actualFileName = fileName ? path.join(directory, fileName) : undefined
   for (const file of files) {
+    const fh = await fs.promises.open(file, 'r')
+    const stat = await fh.stat()
     if (
        (actualFileName && actualFileName !== file) // when filename is specified, only use that file
     || (!file.endsWith('.ts') && !file.endsWith('.js')) // must be a js/ts file
-    || (!fs.statSync(file).isFile()) // must be a file
+    || (!stat.isFile()) // must be a file
     )
       continue
-    const content = await fs.promises.readFile(file, 'utf8');
+    const content = await fh.readFile('utf8')
+    fh.close()
     const ast = parse(content, { range: true, loc: true })
     functionList.push({
       fileName: file,
@@ -107,8 +110,11 @@ export async function getFileList(directory = __dirname, originalRoot = director
     // Check if there's a .gitignore file in the current directory
     // If .gitignore exists, add its rules to the ignore filter
     const gitignorePath = path.join(directory, '.gitignore');
-    if (fs.existsSync(gitignorePath)) {
-      const gitignoreContent = (await fs.promises.readFile(gitignorePath)).toString('utf-8')
+    const fh = await fs.promises.open(gitignorePath)
+    const stat = await fh.stat()
+    if (stat.isFile()) {
+      const gitignoreContent = await fh.readFile('utf8')
+      fh.close()
       ig.add(
         gitignoreContent
           .split(/\n|\r/)
@@ -122,22 +128,26 @@ export async function getFileList(directory = __dirname, originalRoot = director
     const fullPath = path.join(directory, file)
     const fullRelativePath = path.relative(originalRoot, fullPath)
 
-    const stat = await fs.promises.stat(fullPath);
+    const fh = await fs.promises.open(fullPath, 'r')
+    const stat = await fh.stat()
 
     // If the file is a directory, recurse into it
     // Note that this will check for a .gitignore file in the directory
     if (stat.isDirectory()) {
+      await fh.close()
       // Skip if the directory is ignored
       const ignored = ig.ignores(fullRelativePath.endsWith('/') ? fullRelativePath : fullRelativePath + '/')
       if (ignored)
         continue
       fileList.push(...await getFileList(fullPath, originalRoot, ig));
     } else if (stat.isFile()) {
+      await fh.close()
       // Skip if the file is ignored
       if (ig.ignores(fullRelativePath))
         continue
       fileList.push(fullPath);
     }
+
   }
 
   return fileList;
