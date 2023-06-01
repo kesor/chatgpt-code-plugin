@@ -9,16 +9,29 @@ import { handleErrors, validateFileName, validateFunctionName, validateParams } 
 import { getFileList, getFunctionData, getFunctionList } from './function-utils'
 import { logger } from './logger'
 
+// Define constants for server configuration
 const PORT = +(process.env.PORT ?? 3000)
 const HOST = process.env.HOST ?? '127.0.0.1'
 const TIMEOUT = '5000ms' // https://expressjs.com/en/resources/middleware/timeout.html
 const BASE_PATH = process.env.BASE_PATH ?? path.resolve(__dirname, '..', 'src')
 
-// File path resolution function
+/**
+ * Resolves the file path for a given file name.
+ *
+ * @param {string} fileName - The name of the file.
+ * @returns {string} The resolved file path.
+ */
 const resolveFilePath = (fileName: string) => {
   return path.join(BASE_PATH, decodeURIComponent(fileName))
 }
 
+/**
+ * Reads the content of a file.
+ *
+ * @param {express.Request} req - The HTTP request object.
+ * @param {boolean} content - Whether to read the file content.
+ * @returns {Promise<Object>} An object containing the file name, file path, and file content.
+ */
 const readFileContent = async (req: express.Request, content = true) => {
   const fileName = decodeURIComponent(req.params[0])
   const filePath = resolveFilePath(fileName)
@@ -29,8 +42,14 @@ const readFileContent = async (req: express.Request, content = true) => {
   }
 }
 
-// This function handles GET requests to /files.
-// It fetches the list of files and sends it in the response.
+/**
+ * Handles GET requests to /files.
+ * Fetches the list of files under BASE_PATH and sends it in the response.
+ *
+ * @param {express.Request} req - The HTTP request object.
+ * @param {express.Response} res - The HTTP response object.
+ * @param {express.NextFunction} next - The next middleware function.
+ */
 const getFiles: express.RequestHandler = async (req, res, next) => {
   logger.info('getFiles')
   try {
@@ -41,8 +60,14 @@ const getFiles: express.RequestHandler = async (req, res, next) => {
   }
 }
 
-// This function handles GET requests to /files/:fileName.
-// It validates the fileName parameter, reads the file content, and sends it in the response.
+/**
+ * Handles GET requests to /files/:fileName.
+ * Responds with file content or an error
+ *
+ * @param {express.Request} req - The HTTP request object.
+ * @param {express.Response} res - The HTTP response object.
+ * @param {express.NextFunction} next - The next middleware function.
+ */
 const getFileContent: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   try {
@@ -63,8 +88,14 @@ const getFileContent: express.RequestHandler = async (req, res, next) => {
   }
 }
 
-// This function handles GET requests to /functions.
-// It fetches the list of all functions and sends it in the response.
+/**
+ * Handles GET requests to /functions.
+ * Responds with a list of functions from all project .ts files
+ *
+ * @param {express.Request} req - The HTTP request object.
+ * @param {express.Response} res - The HTTP response object.
+ * @param {express.NextFunction} next - The next middleware function.
+ */
 const getAllFunctions: express.RequestHandler = async (req, res, next) => {
   logger.info('getAllFunctions')
   try {
@@ -77,8 +108,14 @@ const getAllFunctions: express.RequestHandler = async (req, res, next) => {
   }
 }
 
-// This function handles GET requests to /files/:fileName/functions.
-// It fetches the list of functions in the specified file and sends it in the response.
+/**
+ * Handles GET requests to /files/:fileName/functions.
+ * Responds with a list of functions from the specified .ts file
+ *
+ * @param {express.Request} req - The HTTP request object.
+ * @param {express.Response} res - The HTTP response object.
+ * @param {express.NextFunction} next - The next middleware function.
+ */
 const getFunctionsInFile: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   try {
@@ -93,6 +130,14 @@ const getFunctionsInFile: express.RequestHandler = async (req, res, next) => {
   }
 }
 
+/**
+ * Handles GET requests to /files/:fileName/functions/:functionName.
+ * Responds with the content of the named function in a specific file.
+ *
+ * @param {express.Request} req - The HTTP request object.
+ * @param {express.Response} res - The HTTP response object.
+ * @param {express.NextFunction} next - The next middleware function.
+ */
 const getFunctionContent: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   try {
@@ -107,7 +152,14 @@ const getFunctionContent: express.RequestHandler = async (req, res, next) => {
     next(err)
   }
 }
-
+/**
+ * Sets extra CORS headers.
+ * Middleware that adds headers required by OpenAI plugins to each response.
+ *
+ * @param {express.Request} req - The HTTP request object.
+ * @param {express.Response} res - The HTTP response object.
+ * @param {express.NextFunction} next - The next middleware function.
+ */
 const extraCors: express.RequestHandler = async (req, res, next) => {
   res.setHeader("Access-Control-Allow-Private-Network", "true")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization")
