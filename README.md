@@ -21,6 +21,13 @@ Code ChatGPT Plugin is a TypeScript Code Analyzer that provides a set of utiliti
 5. Start the server: `BASE_PATH=/home/myuser/src/awesome-project  npm start`
 6. Add the API into ChatGPT Plus plugins' "Developer your own plugin" interface (`http://localhost:3000`)
 
+### Prerequisites
+
+1. You must have ChatGPT Plugins available to you
+    ![ChatGPT Plugins Beta](prereq-plugins.png)
+2. You must have ChatGPT Plugin Developer available to you as well
+    ![ChatGPT Plugins Developer](prereq-plugin-dev.png)
+
 ## Usage
 
 Once the server is running, you, or ChatGPT, can use the following endpoints:
