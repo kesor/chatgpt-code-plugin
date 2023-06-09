@@ -5,7 +5,7 @@
     "start": "cd $INIT_CWD/dist && node $INIT_CWD/dist/index.js",
     "lint": "eslint $INIT_CWD/src",
     "test": "cd $INIT_CWD ; jest",
-    "build": "yarn clean && yarn compile && cp -r src/public dist/",
+    "build": "npm run clean && npm run compile && cp -r src/public dist/",
     "compile": "tsc -b $INIT_CWD -v --listEmittedFiles",
     "clean": "rm -rf $INIT_CWD/dist"
   },
