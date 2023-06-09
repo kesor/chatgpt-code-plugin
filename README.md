@@ -24,8 +24,11 @@ Code ChatGPT Plugin is a TypeScript Code Analyzer that provides a set of utiliti
 ### Prerequisites
 
 1. You must have ChatGPT Plugins available to you
+
     ![ChatGPT Plugins Beta](prereq-plugins.png)
+
 2. You must have ChatGPT Plugin Developer available to you as well
+
     ![ChatGPT Plugins Developer](prereq-plugin-dev.png)
 
 ## Usage
