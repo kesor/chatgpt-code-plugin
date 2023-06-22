@@ -4,7 +4,7 @@
   "scripts": {
     "start": "cd $INIT_CWD/dist && node $INIT_CWD/dist/index.js",
     "lint": "eslint $INIT_CWD/src",
-    "test": "cd $INIT_CWD ; jest",
+    "test": "cd $INIT_CWD ; jest --coverage",
     "build": "npm run clean && npm run compile && cp -r src/public dist/",
     "compile": "tsc -b $INIT_CWD -v --listEmittedFiles",
     "clean": "rm -rf $INIT_CWD/dist"
@@ -17,7 +17,9 @@
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.1",
     "@types/morgan": "^1",
+    "@types/supertest": "^2.0.12",
     "jest": "^29.5.0",
+    "supertest": "^6.3.3",
     "ts-jest": "^29.1.0",
     "typescript": ">=3.3.1 <5.1.0"
   },

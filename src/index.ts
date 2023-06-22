@@ -3,8 +3,10 @@ import timeout from 'connect-timeout'
 import cors from 'cors'
 import express from 'express'
 import fs from 'fs'
+import type http from 'http'
 import morgan from 'morgan'
 import path from 'path'
+import { runCommand } from './cmd-runner'
 import { handleErrors, validateFileName, validateFunctionName, validateParams } from './error-handler'
 import { getFileList, getFunctionData, getFunctionList } from './function-utils'
 import { logger } from './logger'
@@ -12,8 +14,9 @@ import { logger } from './logger'
 // Define constants for server configuration
 const PORT = +(process.env.PORT ?? 3000)
 const HOST = process.env.HOST ?? '127.0.0.1'
-const TIMEOUT = '5000ms' // https://expressjs.com/en/resources/middleware/timeout.html
-const BASE_PATH = process.env.BASE_PATH ?? path.resolve(__dirname, '..', 'src')
+const TIMEOUT = '15000ms' // https://expressjs.com/en/resources/middleware/timeout.html
+const BASE_PATH = process.env.BASE_PATH ?? path.resolve(__dirname, '..')
+const ALLOW_OVERWRITE = process.env.ALLOW_OVERWRITE ?? false
 
 /**
  * Resolves the file path for a given file name.
@@ -55,6 +58,26 @@ const getFiles: express.RequestHandler = async (req, res, next) => {
   try {
     const files = await getFileList(BASE_PATH)
     res.send(files.map(fileName => encodeURIComponent(path.relative(BASE_PATH, fileName))))
+  } catch (err) {
+    next(err)
+  }
+}
+
+const postNewFile: express.RequestHandler = async (req, res, next) => {
+  validateParams(req, res, next)
+  const fileName = req.params[0]
+  const { content } = req.body
+  logger.info('Creating a new file names %s', fileName)
+  if (!content)
+    return res.status(400).json({ error: 'Missing file content.' })
+  const filePath = path.join(BASE_PATH, fileName)
+  try {
+    await fs.promises.mkdir(path.dirname(filePath), { recursive: true })
+    const fh = await fs.promises.open(filePath, ALLOW_OVERWRITE ? 'w' : 'wx')
+    await fh.writeFile(content)
+    await fh.close()
+    logger.info('Successfully created new file %s', fileName)
+    res.status(201).json({ message: 'File created successfully' })
   } catch (err) {
     next(err)
   }
@@ -152,6 +175,29 @@ const getFunctionContent: express.RequestHandler = async (req, res, next) => {
     next(err)
   }
 }
+
+/**
+ * Handles POST requests to /run-command.
+ * Executes a command and streams the output.
+ *
+ * @param {express.Request} req - The HTTP request object.
+ * @param {express.Response} res - The HTTP response object.
+ * @param {express.NextFunction} next - The next middleware function.
+ */
+const runCmd: express.RequestHandler = async (req, res, next) => {
+  const { command } = req.body;
+
+  if (!command)
+    return res.status(400).json({ error: 'Command is required' });
+
+  try {
+    const { exitCode, stdout, stderr } = await runCommand(command)
+    res.json({ exitCode, stdout, stderr })
+  } catch (error) {
+    next(error);
+  }
+}
+
 /**
  * Sets extra CORS headers.
  * Middleware that adds headers required by OpenAI plugins to each response.
@@ -166,7 +212,7 @@ const extraCors: express.RequestHandler = async (req, res, next) => {
   next()
 }
 
-const server = express()
+const app = express()
   .disable('x-powered-by')
   .use( timeout(TIMEOUT) )
   .use( compression() )
@@ -176,14 +222,21 @@ const server = express()
   .use( morgan('dev') )
   .use( express.static('public') )
   .get( '/files', [ timeout(TIMEOUT) ], getFiles )
+  .post( '/files/*', [ timeout(TIMEOUT), validateFileName ], postNewFile )
   .get( '/functions', [ timeout(TIMEOUT) ], getAllFunctions )
   .get( '/files/*/functions/:functionName', [ timeout(TIMEOUT), validateFileName, validateFunctionName ], getFunctionContent )
   .get( '/files/*/functions', [ timeout(TIMEOUT), validateFileName ], getFunctionsInFile )
   .get( '/files/*', [ timeout(TIMEOUT), validateFileName ], getFileContent )
+  .post( '/run-command', [ timeout(TIMEOUT) ], runCmd)
   .use( handleErrors )
-  .listen( PORT, HOST, () => {
+
+let server: http.Server
+
+if (require.main === module) {
+  server = app.listen( PORT, HOST, () => {
     console.error(`HTTP Server listening on ${HOST}:${PORT}`)
   })
+}
 
 process.on('SIGTERM', () => {
   logger.info('SIGTERM signal received: closing HTTP server')
@@ -214,3 +267,5 @@ process.on('unhandledRejection', (reason, promise) => {
   })
   process.exit(1)
 })
+
+export { app }

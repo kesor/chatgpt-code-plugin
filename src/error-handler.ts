@@ -22,6 +22,8 @@ export const validateParams: express.RequestHandler = (req, res, next) => {
 
 export const handleErrors: express.ErrorRequestHandler = (err, req, res, next) => {
   logger.error(err)
+  if (err.code === 'EEXIST')
+    return res.status(400).json({ error: 'File already exists' })
   if (err.code === 'ENOENT')
     return res.status(404).send({ error: 'File not found' })
   if (err.code === 'EACCES')

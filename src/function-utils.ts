@@ -110,17 +110,19 @@ export async function getFileList(directory = __dirname, originalRoot = director
     // Check if there's a .gitignore file in the current directory
     // If .gitignore exists, add its rules to the ignore filter
     const gitignorePath = path.join(directory, '.gitignore');
-    const fh = await fs.promises.open(gitignorePath)
-    const stat = await fh.stat()
-    if (stat.isFile()) {
-      const gitignoreContent = await fh.readFile('utf8')
-      fh.close()
-      ig.add(
-        gitignoreContent
-          .split(/\n|\r/)
-          .filter(line => !line.startsWith('#'))
-          .map(line => line.startsWith('/') ? line.slice(1) : line)
-      )
+    if (fs.existsSync(gitignorePath)) {
+      const fh = await fs.promises.open(gitignorePath, 'r')
+      const stat = await fh.stat()
+      if (stat.isFile()) {
+        const gitignoreContent = await fh.readFile('utf8')
+        fh.close()
+        ig.add(
+          gitignoreContent
+            .split(/\n|\r/)
+            .filter(line => !line.startsWith('#'))
+            .map(line => line.startsWith('/') ? line.slice(1) : line)
+        )
+      }
     }
   }
 

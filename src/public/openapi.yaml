@@ -89,6 +89,44 @@ paths:
         '500':
           description: Internal server error
 
+    post:
+      operationId: postNewFile
+      summary: Create a new file in the project with specified content
+      parameters:
+        - in: path
+          name: fileName
+          required: true
+          schema:
+            type: string
+          description: The name of the file to create
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+              required:
+                - content
+            example:
+              content: "Hello, world!"
+      responses:
+        '201':
+          description: File created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Bad request
+        '500':
+          description: Internal server error
+
   /files/{fileName}/functions:
     get:
       operationId: getFunctionsInFile
@@ -169,3 +207,39 @@ paths:
                   endByte:
                     description: last byte of function location in the file
                     type: number
+
+  /run-command:
+    post:
+      operationId: runCommand
+      summary: Run a command and stream the output
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                command:
+                  type: string
+              required:
+                - command
+            example:
+              command: "npm test"
+      responses:
+        '200':
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exitCode:
+                    type: number
+                  stdout:
+                    type: string
+                  stderr:
+                    type: string
+        '400':
+          description: Bad request (missing or incorrect parameters)
+        '500':
+          description: Internal server error
