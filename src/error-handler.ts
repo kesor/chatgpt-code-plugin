@@ -8,6 +8,12 @@ export const validateFileName =
 export const validateFunctionName =
   check('functionName').isString().withMessage('Function name should be a string')
 
+export const validateDependencyOperation =
+  check('operation').isString().isIn(['add','remove','update']).withMessage('Invalid operation. Must be one of "add", "remove", "update".')
+
+export const validatePackageName =
+  check('package').isString().withMessage('Package name is required.')
+
 // Parameter validation function
 export const validateParams: express.RequestHandler = (req, res, next) => {
   const errors = validationResult(req)

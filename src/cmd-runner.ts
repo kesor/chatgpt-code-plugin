@@ -17,11 +17,11 @@ export type CommandResult = {
  *
  * @param {string} command - The command to execute
  */
-export function runCommand (command: string) {
+export function runCommand (command: string, strict = true) {
   if (!command)
     throw new Error('Command is required')
 
-  if (!ALLOWED_COMMANDS.includes(command.trim()))
+  if (strict && !ALLOWED_COMMANDS.includes(command.trim()))
     throw new Error(`Allowed commands are strictly ${ALLOWED_COMMANDS.join(',')}. This command is not allowed.`)
 
   return new Promise<CommandResult>(

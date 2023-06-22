@@ -7,7 +7,7 @@ import type http from 'http'
 import morgan from 'morgan'
 import path from 'path'
 import { runCommand } from './cmd-runner'
-import { handleErrors, validateFileName, validateFunctionName, validateParams } from './error-handler'
+import { handleErrors, validateDependencyOperation, validateFileName, validateFunctionName, validatePackageName, validateParams } from './error-handler'
 import { getFileList, getFunctionData, getFunctionList } from './function-utils'
 import { logger } from './logger'
 
@@ -17,6 +17,7 @@ const HOST = process.env.HOST ?? '127.0.0.1'
 const TIMEOUT = '15000ms' // https://expressjs.com/en/resources/middleware/timeout.html
 const BASE_PATH = process.env.BASE_PATH ?? path.resolve(__dirname, '..')
 const ALLOW_OVERWRITE = process.env.ALLOW_OVERWRITE ?? false
+const PKG_MANAGER = process.env.PKG_MANAGER ?? 'yarn'
 
 /**
  * Resolves the file path for a given file name.
@@ -198,6 +199,46 @@ const runCmd: express.RequestHandler = async (req, res, next) => {
   }
 }
 
+const getDependencies: express.RequestHandler = async (req, res, next) => {
+  // Ignore PKG_MANAGER here because:
+  //   github.com/yarnpkg/yarn/issues/3569
+  const command = `npm list --json --depth=0 --omit dev`
+  try {
+    const { exitCode, stdout, stderr } = await runCommand(command, false)
+    res.json({ exitCode, stdout, stderr })
+  } catch (error) {
+    next(error)
+  }
+}
+
+const postDependencies: express.RequestHandler = async (req, res, next) => {
+  const { operation, packageName, version } = req.body;
+  let op, command = ''
+  switch (operation) {
+    case 'list':
+      command = `${PKG_MANAGER} list`
+      break
+    case 'add':
+      op = PKG_MANAGER === 'yarn' ? 'add' : 'install'
+      command = `${PKG_MANAGER} ${op} ${packageName}${version ? `@${version}` : ''}`
+      break
+    case 'remove':
+      op = PKG_MANAGER === 'yarn' ? 'remove' : 'uninstall'
+      command = `${PKG_MANAGER} ${op} ${packageName}`
+      break
+    case 'update':
+      op = PKG_MANAGER === 'yarn' ? 'upgrade' : 'update'
+      command = `${PKG_MANAGER} ${op} ${packageName}${version ? `@${version}` : ''}`
+      break
+  }
+  try {
+    const { exitCode, stdout, stderr } = await runCommand(command, false)
+    res.json({ exitCode, stdout, stderr })
+  } catch (error) {
+    next(error)
+  }
+}
+
 /**
  * Sets extra CORS headers.
  * Middleware that adds headers required by OpenAI plugins to each response.
@@ -227,7 +268,9 @@ const app = express()
   .get( '/files/*/functions/:functionName', [ timeout(TIMEOUT), validateFileName, validateFunctionName ], getFunctionContent )
   .get( '/files/*/functions', [ timeout(TIMEOUT), validateFileName ], getFunctionsInFile )
   .get( '/files/*', [ timeout(TIMEOUT), validateFileName ], getFileContent )
-  .post( '/run-command', [ timeout(TIMEOUT) ], runCmd)
+  .post( '/run-command', [ timeout(TIMEOUT) ], runCmd )
+  .get( '/dependencies', [ timeout(TIMEOUT) ], getDependencies )
+  .post( '/dependencies', [ timeout(TIMEOUT), validateDependencyOperation, validatePackageName ], postDependencies )
   .use( handleErrors )
 
 let server: http.Server

@@ -4,7 +4,9 @@ info:
   version: 1.0.0
 servers:
   - url: http://localhost:3000
+
 paths:
+
   /files:
     get:
       operationId: getFiles
@@ -20,6 +22,7 @@ paths:
                   type: string
         '500':
           description: Internal server error
+
   /functions:
     get:
       operationId: getFunctions
@@ -228,6 +231,70 @@ paths:
       responses:
         '200':
           description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exitCode:
+                    type: number
+                  stdout:
+                    type: string
+                  stderr:
+                    type: string
+        '400':
+          description: Bad request (missing or incorrect parameters)
+        '500':
+          description: Internal server error
+
+  /dependencies:
+    get:
+      operationId: getDependencies
+      summary: List project dependencies
+      responses:
+        '200':
+          description: Successful execution of yarn or npm command.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exitCode:
+                    type: number
+                  stdout:
+                    type: string
+                  stderr:
+                    type: string
+        '400':
+          description: Bad request (missing or incorrect parameters)
+        '500':
+          description: Internal server error
+    post:
+      operationId: manageDependencies
+      summary: Add, remove or update project dependencies
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                operation:
+                  type: string
+                packageName:
+                  type: string
+                version:
+                  type: string
+              required:
+                - operation
+                - packageName
+            example:
+              operation: "add"
+              packageName: "@types/node"
+              version: "^20.3"
+      responses:
+        '200':
+          description: Successful execution of yarn or npm command.
           content:
             application/json:
               schema:
