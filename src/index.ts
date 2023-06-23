@@ -192,7 +192,7 @@ const runCmd: express.RequestHandler = async (req, res, next) => {
     return res.status(400).json({ error: 'Command is required' });
 
   try {
-    const { exitCode, stdout, stderr } = await runCommand(command)
+    const { exitCode, stdout, stderr } = await runCommand(command, BASE_PATH)
     res.json({ exitCode, stdout, stderr })
   } catch (error) {
     next(error);
@@ -204,7 +204,7 @@ const getDependencies: express.RequestHandler = async (req, res, next) => {
   //   github.com/yarnpkg/yarn/issues/3569
   const command = `npm list --json --depth=0 --omit dev`
   try {
-    const { exitCode, stdout, stderr } = await runCommand(command, false)
+    const { exitCode, stdout, stderr } = await runCommand(command, BASE_PATH, false)
     res.json({ exitCode, stdout, stderr })
   } catch (error) {
     next(error)
@@ -232,7 +232,7 @@ const postDependencies: express.RequestHandler = async (req, res, next) => {
       break
   }
   try {
-    const { exitCode, stdout, stderr } = await runCommand(command, false)
+    const { exitCode, stdout, stderr } = await runCommand(command, BASE_PATH, false)
     res.json({ exitCode, stdout, stderr })
   } catch (error) {
     next(error)

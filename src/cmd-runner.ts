@@ -3,7 +3,9 @@ import { spawn } from 'child_process';
 const ALLOWED_COMMANDS = [
   'yarn test',
   'npm test',
-  'npm run test'
+  'npm run test',
+  'yarn install',
+  'npm install'
 ]
 
 export type CommandResult = {
@@ -17,16 +19,18 @@ export type CommandResult = {
  *
  * @param {string} command - The command to execute
  */
-export function runCommand (command: string, strict = true) {
+export function runCommand (command: string, base_path: string, strict = true) {
   if (!command)
     throw new Error('Command is required')
 
   if (strict && !ALLOWED_COMMANDS.includes(command.trim()))
     throw new Error(`Allowed commands are strictly ${ALLOWED_COMMANDS.join(',')}. This command is not allowed.`)
 
+  const wrappedCmd = `sh -c 'cd ${base_path} ; ${command}'`
+
   return new Promise<CommandResult>(
     (resolve, reject) => {
-      const childProcess = spawn(command, { shell: true })
+      const childProcess = spawn(wrappedCmd, { shell: true })
 
       let stdout = ''
       let stderr = ''
