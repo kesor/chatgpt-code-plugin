@@ -2,7 +2,8 @@
   "name": "chatgpt-code-plugin",
   "version": "0.0.1",
   "scripts": {
-    "start": "cd $INIT_CWD/dist && node $INIT_CWD/dist/index.js",
+    "start": "cd $INIT_CWD/dist && node index.js",
+    "start:logs": "cd $INIT_CWD/dist && { node index.js & } && tail -F combined.log error.log",
     "lint": "eslint $INIT_CWD/src",
     "test": "cd $INIT_CWD ; jest --coverage",
     "build": "npm run clean && npm run compile && cp -r src/public dist/",
