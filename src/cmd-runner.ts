@@ -2,10 +2,13 @@ import { spawn } from 'child_process';
 
 const ALLOWED_COMMANDS = [
   'yarn test',
+  'yarn run coverage',
+  'yarn install',
+  'yarn coverage',
   'npm test',
   'npm run test',
-  'yarn install',
-  'npm install'
+  'npm run coverage',
+  'npm install',
 ]
 
 export type CommandResult = {
