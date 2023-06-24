@@ -8,7 +8,8 @@ import morgan from 'morgan'
 import path from 'path'
 import { runCommand } from './cmd-runner'
 import { handleErrors, validateDependencyOperation, validateFileName, validateFunctionName, validatePackageName, validateParams } from './error-handler'
-import { getFileList, getFunctionData, getFunctionList } from './function-utils'
+import { getFileList, isDirectory } from './file-utils'
+import { getFunctionData, getFunctionList } from './function-utils'
 import { logger } from './logger'
 
 // Define constants for server configuration
@@ -92,11 +93,24 @@ const postNewFile: express.RequestHandler = async (req, res, next) => {
  * @param {express.Response} res - The HTTP response object.
  * @param {express.NextFunction} next - The next middleware function.
  */
-const getFileContent: express.RequestHandler = async (req, res, next) => {
+const getFileOrFolderContent: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
+  const { fileName, filePath } = await readFileContent(req, false)
+
+  if (await isDirectory(filePath)) {
+    logger.info('Listing files in directory %s', filePath)
+    try {
+      const files = await getFileList(filePath)
+      res.send(files.map(fileName => encodeURIComponent(path.relative(BASE_PATH, fileName))))
+    } catch (err) {
+      next(err)
+    }
+    return
+  }
+
   try {
-    logger.info('Reading file content file %s', req.params[0])
-    const { fileName, fileContent } = await readFileContent(req)
+    logger.info('Reading file content file %s', fileName)
+    const { fileContent } = await readFileContent(req)
     if (!fileContent)
       return next({ error: 'No content found in file', fileName })
     const startByte = +(req.query['startByte'] ?? 0)
@@ -267,7 +281,7 @@ const app = express()
   .get( '/functions', [ timeout(TIMEOUT) ], getAllFunctions )
   .get( '/files/*/functions/:functionName', [ timeout(TIMEOUT), validateFileName, validateFunctionName ], getFunctionContent )
   .get( '/files/*/functions', [ timeout(TIMEOUT), validateFileName ], getFunctionsInFile )
-  .get( '/files/*', [ timeout(TIMEOUT), validateFileName ], getFileContent )
+  .get( '/files/*', [ timeout(TIMEOUT), validateFileName ], getFileOrFolderContent )
   .post( '/run-command', [ timeout(TIMEOUT) ], runCmd )
   .get( '/dependencies', [ timeout(TIMEOUT) ], getDependencies )
   .post( '/dependencies', [ timeout(TIMEOUT), validateDependencyOperation, validatePackageName ], postDependencies )

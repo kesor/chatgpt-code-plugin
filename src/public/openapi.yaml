@@ -55,8 +55,8 @@ paths:
 
   /files/{fileName}:
     get:
-      operationId: getFileContent
-      summary: Get content or range of bytes from a specific file in this project
+      operationId: getFileOrFolderContent
+      summary: Get content or range of bytes from a specific file in this project, when specified filename is a directory it will list the files in the directory
       parameters:
         - name: fileName
           in: path

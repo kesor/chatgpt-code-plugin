@@ -1,7 +1,7 @@
 import { AST, AST_NODE_TYPES, parse } from '@typescript-eslint/typescript-estree';
 import fs from 'fs';
-import ignore from 'ignore';
 import path from 'path';
+import { getFileList } from './file-utils';
 
 interface FileRef {
   fileName: string
@@ -97,62 +97,6 @@ export async function getFunctionList(directory: string = __dirname, fileName?: 
   }
 
   return functionList
-}
-
-export async function getFileList(directory = __dirname, originalRoot = directory, ig = ignore()) {
-  const fileList: string[] = [];
-  const files = await fs.promises.readdir(directory);
-
-  if (directory === originalRoot) {
-    // always ignore .git folder and node_modules/ folders
-    ig.add(['.git/**', 'node_modules/**'])
-
-    // Check if there's a .gitignore file in the current directory
-    // If .gitignore exists, add its rules to the ignore filter
-    const gitignorePath = path.join(directory, '.gitignore');
-    if (fs.existsSync(gitignorePath)) {
-      const fh = await fs.promises.open(gitignorePath, 'r')
-      const stat = await fh.stat()
-      if (stat.isFile()) {
-        const gitignoreContent = await fh.readFile('utf8')
-        fh.close()
-        ig.add(
-          gitignoreContent
-            .split(/\n|\r/)
-            .filter(line => !line.startsWith('#'))
-            .map(line => line.startsWith('/') ? line.slice(1) : line)
-        )
-      }
-    }
-  }
-
-  for (const file of files) {
-    const fullPath = path.join(directory, file)
-    const fullRelativePath = path.relative(originalRoot, fullPath)
-
-    const fh = await fs.promises.open(fullPath, 'r')
-    const stat = await fh.stat()
-
-    // If the file is a directory, recurse into it
-    // Note that this will check for a .gitignore file in the directory
-    if (stat.isDirectory()) {
-      await fh.close()
-      // Skip if the directory is ignored
-      const ignored = ig.ignores(fullRelativePath.endsWith('/') ? fullRelativePath : fullRelativePath + '/')
-      if (ignored)
-        continue
-      fileList.push(...await getFileList(fullPath, originalRoot, ig));
-    } else if (stat.isFile()) {
-      await fh.close()
-      // Skip if the file is ignored
-      if (ig.ignores(fullRelativePath))
-        continue
-      fileList.push(fullPath);
-    }
-
-  }
-
-  return fileList;
 }
 
 export type FunctionData = {
