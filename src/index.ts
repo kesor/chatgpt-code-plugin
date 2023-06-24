@@ -69,7 +69,7 @@ const postNewFile: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   const fileName = req.params[0]
   const { content } = req.body
-  logger.info('Creating a new file names %s', fileName)
+  logger.info(`Creating a new file named ${fileName}`)
   if (!content)
     return res.status(400).json({ error: 'Missing file content.' })
   const filePath = path.join(BASE_PATH, fileName)
@@ -78,7 +78,7 @@ const postNewFile: express.RequestHandler = async (req, res, next) => {
     const fh = await fs.promises.open(filePath, ALLOW_OVERWRITE ? 'w' : 'wx')
     await fh.writeFile(content)
     await fh.close()
-    logger.info('Successfully created new file %s', fileName)
+    logger.info(`Successfully created new file ${fileName}`)
     res.status(201).json({ message: 'File created successfully' })
   } catch (err) {
     next(err)
@@ -98,7 +98,7 @@ const getFileOrFolderContent: express.RequestHandler = async (req, res, next) =>
   const { fileName, filePath } = await readFileContent(req, false)
 
   if (await isDirectory(filePath)) {
-    logger.info('Listing files in directory %s', filePath)
+    logger.info(`Listing files in directory ${filePath}`)
     try {
       const files = await getFileList(filePath)
       res.send(files.map(fileName => encodeURIComponent(path.relative(BASE_PATH, fileName))))
@@ -109,7 +109,7 @@ const getFileOrFolderContent: express.RequestHandler = async (req, res, next) =>
   }
 
   try {
-    logger.info('Reading file content file %s', fileName)
+    logger.info(`Reading file content file ${fileName}`)
     const { fileContent } = await readFileContent(req)
     if (!fileContent)
       return next({ error: 'No content found in file', fileName })
@@ -157,7 +157,7 @@ const getAllFunctions: express.RequestHandler = async (req, res, next) => {
 const getFunctionsInFile: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   try {
-    logger.info('Reading file content file %s', req.params[0])
+    logger.info(`Reading file content file ${req.params[0]}`)
     const { fileName } = await readFileContent(req, false)
     res.send(
       (await getFunctionList(BASE_PATH, fileName))
@@ -180,7 +180,7 @@ const getFunctionContent: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   try {
     const { functionName } = req.params
-    logger.info(`Reading file content file %s to inspect function %s`, req.params[0], functionName)
+    logger.info(`Reading file content file ${req.params[0]} to inspect function functionName`)
     const { filePath } = await readFileContent(req, false)
     const functionCode = await getFunctionData(functionName, filePath)
     if (!functionCode)
@@ -310,7 +310,7 @@ process.on('SIGINT', () => {
 })
 
 process.on('uncaughtException', (err) => {
-  logger.error('Uncaught exception', err)
+  logger.error(`Uncaught exception: ${err}`)
   server.close(() => {
     logger.info('HTTP server closed')
   })
@@ -318,7 +318,7 @@ process.on('uncaughtException', (err) => {
 })
 
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled promise rejection', { promise, reason })
+  logger.error(`Unhandled promise rejection: ${JSON.stringify({ promise, reason })}`)
   server.close(() => {
     logger.info('HTTP server closed')
   })
