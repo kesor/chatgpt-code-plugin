@@ -180,7 +180,7 @@ const getFunctionContent: express.RequestHandler = async (req, res, next) => {
   validateParams(req, res, next)
   try {
     const { functionName } = req.params
-    logger.info(`Reading file content file ${req.params[0]} to inspect function functionName`)
+    logger.info(`Reading file content file ${req.params[0]} to inspect function ${functionName}`)
     const { filePath } = await readFileContent(req, false)
     const functionCode = await getFunctionData(functionName, filePath)
     if (!functionCode)
