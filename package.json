@@ -32,7 +32,7 @@
     ]
   },
   "dependencies": {
-    "@typescript-eslint/typescript-estree": "^5.60.0",
+    "@typescript-eslint/typescript-estree": "^6.3.0",
     "compression": "^1.7.4",
     "connect-timeout": "^1.9.0",
     "cors": "^2.8.5",
