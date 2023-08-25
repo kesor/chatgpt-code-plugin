@@ -21,6 +21,43 @@ const ALLOW_OVERWRITE = process.env.ALLOW_OVERWRITE ?? false
 const PKG_MANAGER = process.env.PKG_MANAGER ?? 'yarn'
 
 /**
+ * Handle requests to /.well-known/ai-plugin.json
+ * Provides the description and URLs for this plugin.
+ * doc: https://platform.openai.com/docs/plugins/getting-started/plugin-manifest
+ *
+ * @param {express.Request} req - The HTTP request object.
+ * @param {express.Response} res - The HTTP response object.
+ */
+const aiPluginJson = async (req: express.Request, res: express.Response) => {
+  res.json({
+    "schema_version": "v1",
+    "name_for_human": "Code Plugin",
+    "name_for_model": "code",
+    "description_for_human": "Plugin for reading and writing TypeScript code. You can fetch full and minimal versions of functions and files.",
+    "description_for_model": "Reading and writing files with code. Fetch full and minimal versions files and functions, created new files, run test commands.",
+    "auth": { "type": "none" },
+    "api": {
+      "type": "openapi",
+      "url": `http://localhost:${PORT}/openapi.yaml`
+    },
+    "logo_url": `http://localhost:${PORT}/logo.png`,
+    "contact_email": "support@example.com",
+    "legal_info_url": "http://www.example.com/legal"
+  })
+  res.end()
+}
+
+const openApiYaml = (req: express.Request, res: express.Response) => {
+  const openApiFilePath = path.join(__dirname, 'openapi.yaml')
+  fs.readFile(openApiFilePath, 'utf8', (err, data) => {
+    if (err)
+      return res.status(500).send('An error occured while reading openapi.yaml')
+    const updatedYaml = data.replace(/localhost:3000/g, `localhost:${PORT}`)
+    res.send(updatedYaml)
+  })
+}
+
+/**
  * Resolves the file path for a given file name.
  *
  * @param {string} fileName - The name of the file.
@@ -273,9 +310,14 @@ const app = express()
   .use( compression() )
   .use( express.json({ strict: true }) )
   .use( extraCors )
-  .use( cors({ credentials: true }) )
+  .use( cors({
+    credentials: true,
+    origin: [ `http://localhost:${PORT}`, 'https://chat.openai.com' ],
+  }) )
   .use( morgan('dev') )
   .use( express.static('public') )
+  .all( '/.well-known/ai-plugin.json', aiPluginJson )
+  .get( '/openapi.yaml', openApiYaml )
   .get( '/files', [ timeout(TIMEOUT) ], getFiles )
   .post( '/files/*', [ timeout(TIMEOUT), validateFileName ], postNewFile )
   .get( '/functions', [ timeout(TIMEOUT) ], getAllFunctions )

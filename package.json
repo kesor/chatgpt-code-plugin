@@ -6,7 +6,7 @@
     "start:logs": "cd $INIT_CWD/dist && { node index.js & } && tail -F combined.log error.log",
     "lint": "eslint $INIT_CWD/src",
     "test": "cd $INIT_CWD ; jest --coverage",
-    "build": "npm run clean && npm run compile && cp -r src/public dist/",
+    "build": "npm run clean && npm run compile && cp -r src/*.yaml src/public dist/",
     "compile": "tsc -b $INIT_CWD -v --listEmittedFiles",
     "clean": "rm -rf $INIT_CWD/dist"
   },
