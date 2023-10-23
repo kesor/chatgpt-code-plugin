@@ -12,7 +12,7 @@
   },
   "license": "SEE LICENSE IN 'LICENSE'",
   "devDependencies": {
-    "@types/compression": "^1.7.2",
+    "@types/compression": "^1.7.4",
     "@types/connect-timeout": "^0.0.37",
     "@types/cors": "^2",
     "@types/express": "^4.17.17",
